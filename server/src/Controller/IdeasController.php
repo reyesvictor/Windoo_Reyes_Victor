@@ -2,7 +2,11 @@
 
 namespace App\Controller;
 
-use Faker\Factory;
+use App\Entity\Idea;
+use App\Repository\IdeaRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -15,21 +19,23 @@ class IdeasController
      *
      * @return Response
      */
-    public function get_ideas(): Response
+    public function getIdeas(IdeaRepository $ideaRepository): Response
     {
-        $faker = Factory::create('FR-fr');
-        $data = [];
-        for ($i = 1; $i <= $faker->numberBetween($min = 10, $max = 50); $i++) {
-            $idea = [];
-            $idea["id"] = $i;
-            $idea["title"] = $faker->sentence();
-            $idea["createdAt"] = $faker->dateTimeBetween($startDate = '-6 months', $endDate = 'now', $timezone = null);
-            $idea["date_number"] = $idea["createdAt"]->getTimestamp();
-            $idea["author"] = $faker->name();
-            $idea["score"] = $faker->numberBetween($min = 0, $max = 50);
+        $ideas = $ideaRepository->findAll();
 
-            array_push($data, $idea);
-        }
-        return new Response(json_encode($data));
+        return new JsonResponse($ideas);
+    }
+
+    /**
+     * @Route("/api/ideas/{id}/vote", name="ideas_upvote", methods={"POST"})
+     */
+    public function voteIdea(EntityManagerInterface $entityManager, Idea $idea, Request $request): Response
+    {
+        $score = $idea->getScore();
+        $idea->setScore($score + $request->get('vote'));
+
+        $entityManager->flush();
+
+        return new JsonResponse($request->query->all());
     }
 }

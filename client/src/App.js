@@ -1,7 +1,7 @@
-import React, { useState, useEffect, Fragment } from 'react';
-import './App.css';
-import axios from "axios";
+import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.css';
+import React, { Fragment, useEffect, useState } from 'react';
+import './App.css';
 
 function App() {
   //Setting all state hooks
@@ -13,9 +13,26 @@ function App() {
   const [page, setPage] = useState(0);
   const ideasPerPage = 6;
 
+  const voteOnIdea = (idea, vote) => {
+    axios.post(`http://localhost:8000/api/ideas/${idea.id}/vote?vote=${vote}`)
+      .then(response => {
+        if (response.status === 200) {
+          getIdeas();
+        } else {
+          alert('An error occurred !');
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        alert('An error occurred !');
+      })
+  }
+
+  const getIdeas = () => axios.get('http://localhost:8000/api/ideas').then(res => setIdeas(res.data) + setPages(Math.ceil(res.data.length / ideasPerPage)));
+
   // Request to API
   useEffect(() => {
-    axios.get('http://localhost:8000/api/ideas').then(res => setIdeas(res.data) + setPages(Math.ceil(res.data.length / ideasPerPage)))
+    getIdeas();
   }, [])
 
   // Pagination
@@ -86,6 +103,10 @@ function App() {
                       </div>
                       <ul className="list-group list-group-flush">
                         <li className="list-group-item">Score of <span style={select === "filter-score" ? { fontWeight: 'bold' } : null}>{idea.score}</span>/50</li>
+                      </ul>
+                      <ul className="list-group list-group-flush">
+                        <li className="list-group-item">  <button className="btn btn-success" onClick={(e) => voteOnIdea(idea, 1)} >Upvote</button></li>
+                        <li className="list-group-item">  <button className="btn btn-warning" onClick={(e) => voteOnIdea(idea, -1)} >Downvote</button></li>
                       </ul>
                       <div className="card-footer"><small className="text-muted">
                         Posted the <span style={select === "filter-date" ? { fontWeight: 'bold' } : null} >
